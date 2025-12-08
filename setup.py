@@ -3,15 +3,19 @@
 import os
 from setuptools import setup
 
+
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    base_dir = os.path.dirname(__file__)
+    path = os.path.join(base_dir, fname)
+    with open(path, encoding="utf-8") as fp:
+        return fp.read()
 
 
 setup(
     name='mammoth',
     version='1.11.0',
     description='Convert Word documents from docx to simple and clean HTML and Markdown',
-    long_description=read("README"),
+    long_description=read("README.md"),
     author='Michael Williamson',
     author_email='mike@zwobble.org',
     url='https://github.com/mwilliamson/python-mammoth',

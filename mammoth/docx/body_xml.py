@@ -72,6 +72,7 @@ def _create_reader(numbering, content_types, relationships, styles, docx_file, f
         "w:del",
         "w:footnoteRef",
         "w:endnoteRef",
+        "w:moveFrom",
         "w:pPr",
         "w:rPr",
         "w:tblPr",
@@ -203,6 +204,11 @@ def _create_reader(numbering, content_types, relationships, styles, docx_file, f
             del current_instr_text[:]
 
         elif fld_char_type == "end":
+            if len(complex_field_stack) == 0:
+                return _empty_result_with_message(results.warning(
+                    "Ignoring complex field end character without corresponding start character",
+                ))
+
             complex_field = complex_field_stack.pop()
             if isinstance(complex_field, complex_fields.Begin):
                 complex_field = parse_current_instr_text(complex_field)
@@ -211,6 +217,11 @@ def _create_reader(numbering, content_types, relationships, styles, docx_file, f
                 return _success(documents.checkbox(checked=complex_field.checked))
 
         elif fld_char_type == "separate":
+            if len(complex_field_stack) == 0:
+                return _empty_result_with_message(results.warning(
+                    "Ignoring complex field separator character without corresponding start character",
+                ))
+
             complex_field_separate = complex_field_stack.pop()
             complex_field = parse_current_instr_text(complex_field_separate)
             complex_field_stack.append(complex_field)
@@ -228,13 +239,19 @@ def _create_reader(numbering, content_types, relationships, styles, docx_file, f
         return parse_instr_text(instr_text, fld_char=fld_char)
 
     def parse_instr_text(instr_text, *, fld_char):
-        external_link_result = re.match(r'\s*HYPERLINK "(.*)"', instr_text)
-        if external_link_result is not None:
-            return complex_fields.hyperlink(dict(href=external_link_result.group(1)))
+        link_result = re.match(r'^\s*HYPERLINK\s+(\\l\s+)?(?:"(.*)"|([^\\]\S*))', instr_text)
+        if link_result is not None:
+            if link_result.group(2) is None:
+                location = link_result.group(3)
+            else:
+                location = link_result.group(2)
 
-        internal_link_result = re.match(r'\s*HYPERLINK\s+\\l\s+"(.*)"', instr_text)
-        if internal_link_result is not None:
-            return complex_fields.hyperlink(dict(anchor=internal_link_result.group(1)))
+            if link_result.group(1) is None:
+                hyperlink_args = dict(href=location)
+            else:
+                hyperlink_args = dict(anchor=location)
+
+            return complex_fields.hyperlink(hyperlink_args)
 
         checkbox_result = re.match(r'\s*FORMCHECKBOX\s*', instr_text)
         if checkbox_result is not None:
@@ -680,7 +697,13 @@ def _create_reader(numbering, content_types, relationships, styles, docx_file, f
         "w:tbl": table,
         "w:tr": table_row,
         "w:tc": table_cell,
+        "w:customXml": read_child_elements,
         "w:ins": read_child_elements,
+        "w:moveFromRangeEnd": read_child_elements,
+        "w:moveFromRangeStart": read_child_elements,
+        "w:moveTo": read_child_elements,
+        "w:moveToRangeEnd": read_child_elements,
+        "w:moveToRangeStart": read_child_elements,
         "w:object": read_child_elements,
         "w:smartTag": read_child_elements,
         "w:drawing": read_child_elements,

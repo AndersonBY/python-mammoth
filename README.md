@@ -424,6 +424,13 @@ For instance:
   To enable access when converting trusted source documents,
   pass `external_file_access=True`.
 
+* The conversion may exhibit pathological performance on certain documents:
+  it's likely possible to craft a source document that causes high CPU or memory usage.
+  Depending on the performance constraints of your application and the likelihood of receiving untrusted input,
+  you may wish to consider isolating any calls to Mammoth,
+  such as running Mammoth in a separate thread with a timeout,
+  to prevent denial-of-service attacks.
+
 ### Document transforms
 
 **The API for document transforms should be considered unstable,
@@ -770,10 +777,3 @@ div.aside > h2
 ```
 
 You can nest elements to any depth.
-
-## Donations
-
-If you'd like to say thanks, feel free to [make a donation through Ko-fi](https://ko-fi.com/S6S01MG20).
-
-If you use Mammoth as part of your business,
-please consider supporting the ongoing maintenance of Mammoth by [making a weekly donation through Liberapay](https://liberapay.com/mwilliamson/donate).
